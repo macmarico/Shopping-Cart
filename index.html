@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+    <head>
+       <style>
+           *{
+               margin: 0;
+               padding: 0;
+               box-sizing: border-box;
+               font-family: roboto-regular;
+           }
+           @font-face {
+               font-family: roboto-regular;
+               src: url(fonts/Roboto-Regular.ttf);
+           }
+           .nav{
+               display: flex;
+               background-color: #305f72;
+               justify-content: space-between;
+           }  
+           .nav > div {
+               padding: 20px;
+               color: white;
+           }
+           .main{
+               display: flex;
+               height: 90vh;
+           }
+           .options{
+               display: none;
+               flex: 0 0 15%;
+           }
+           .products{
+               flex: 0 0 70%;
+               display: grid;
+               grid-template-columns: auto auto auto;
+               padding: 10px;
+               grid-gap: 10px 10px;
+               background-color: #f1f1f1;
+               overflow-y: scroll;
+           }
+          
+           .product{
+              background-color: white;
+              border-radius: 15px;
+           }
+           .productImage{
+               height: 70%;
+               border: 2px solid black;
+           }
+           .title{
+               text-align: center;  
+               height: 10%; 
+               padding: 10px;
+               font-weight: bolder;
+           }
+           .desc{
+               text-align: center;
+               height: 60%;
+               padding: 20px;
+           }
+           .price{
+               text-align: center;
+               height: 10%;
+           }
+           .buybtn{
+               display: block;
+               margin: auto;
+               padding: 10px;
+               background-color: transparent;
+               border: 2px solid grey;
+               border-radius: 10px;
+           }
+           .cart{
+               flex: 0 0 30%;
+               padding: 10px;
+           }
+           .cartItem{
+               padding: 10px;
+               border-bottom: 2px solid #f1f1f1;       
+           }
+           .controls{
+               display: flex;
+               justify-content: space-between;
+           }
+           .add{
+               flex: 0 0 20%;
+               padding: 10px;
+               text-align: center;
+               font-size: large;
+               font-weight: bolder;
+           }
+           .quantity{
+               flex: 0 0 60%;
+               padding: 10px;
+               text-align: center;
+               background-color: #f1f1f1;
+           }
+           .remove{
+               flex: 0 0 20%;
+               padding: 10px;
+               text-align: center;
+               font-size: large;
+               font-weight: bolder;
+           }
+
+       </style>
+
+    </head>
+    <body>
+
+<script>
+
+    document.addEventListener('DOMContentLoaded',()=>{
+         CART.init();
+         showCart();
+         console.log(CART.contents);
+        
+    });
+
+    const CART = {
+        KEY: 'bkasjbdfkjasdkfjhaksdfjskd',
+        contents: [],
+        init(){
+            let _contents= localStorage.getItem(CART.KEY);
+            if(_contents){
+                CART.contents = JSON.parse(_contents);
+            }else{
+                CART.contents = [
+                        {id:1, title:'Apple', qty:5, itemPrice: 0.85},
+                        {id:2, title:'Banana', qty:3, itemPrice: 0.35},
+                        {id:3, title:'Cherry', qty:8, itemPrice: 0.05}
+                    ];
+                CART.sync();
+            }
+        },
+        async sync(){
+            let _cart = JSON.stringify(CART.contents);
+            await localStorage.setItem(CART.KEY,_cart);
+        },
+        add(ev){
+            let id = parseInt(ev.target.getAttribute('data-id'));
+            let arr = PRODUCTS.filter((product)=>{
+                if(product.id == id){
+                    return true;
+                }
+            });
+            let newItem = {
+                id: arr[0].id,
+                title: arr[0].title,
+                qty: 1,
+                itemPrice: arr[0].itemPrice
+            }
+            CART.contents.push(newItem);
+            CART.sync();
+            showCart();
+        }
+    }
+
+
+
+
+
+function showCart(){
+    let cartSection = document.querySelector('.cart');
+    cartSection.innerHTML = '';
+    CART.contents.forEach((cartItem)=>{
+        let card = document.createElement('div');
+        card.className = 'cartItem';
+
+        let title = document.createElement('div');
+        title.className = 'title';
+        title.textContent = cartItem.title;
+        card.appendChild(title);
+
+        let price = document.createElement('div');
+        price.className = 'price';
+        price.textContent = cartItem.itemPrice;
+        card.appendChild(price);
+
+        let controls = document.createElement('div');
+        controls.className = 'controls';
+
+        let remove = document.createElement('div');
+        remove.className = 'remove';
+        remove.textContent = '-';
+        controls.appendChild(remove);
+
+        let quantity = document.createElement('div');
+        quantity.className = 'quantity';
+        quantity.textContent = cartItem.qty;
+        controls.appendChild(quantity);
+
+        let add = document.createElement('div');
+        add.className = 'add';
+        add.textContent = '+';
+        controls.appendChild(add);
+
+        card.appendChild(controls);
+        cartSection.appendChild(card);
+    });
+}
+
+
+
+const URL = "https://prof3ssorst3v3.github.io/media-sample-files/products.json?";
+    fetch(URL)
+    .then(response=>response.json())
+    .then(products=>showProducts(products));
+
+    function showProducts(products){
+        PRODUCTS = products;
+        let productSection = document.querySelector('.products');
+        productSection.innerHTML = "";
+        products.forEach(product => {
+          let card = document.createElement('div');
+          card.className = 'product';
+
+          let title = document.createElement('div');
+          title.className = 'title';
+          title.textContent = product.title;
+          card.appendChild(title);
+
+          let desc = document.createElement('div');
+          desc.className = 'desc';
+          desc.textContent = product.desc;
+          card.appendChild(desc);
+
+          let price = document.createElement('div');
+          price.className = 'price';
+          price.textContent = product.price;
+          card.appendChild(price);
+
+          let buy = document.createElement('button');
+          buy.className = 'buybtn';
+          buy.innerHTML = 'buy';
+          buy.setAttribute('data-id', product.id);
+          buy.addEventListener('click',CART.add);
+          card.appendChild(buy);
+
+          productSection.appendChild(card);
+        });
+    }
+
+    function addItem(ev){
+        
+
+    }
+</script>
+
+
+
+        <div class="nav">
+            <div><b>SHOPME</b></div>
+            <div>Logout</div>
+        </div>
+        <div class="main">
+            <div class="options"></div>
+            <div class="products"></div>
+            <div class="cart" style="width: 100%;"> </div>
+        </div>
+    </body>
+</html>
