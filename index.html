@@ -12,6 +12,12 @@
                font-family: roboto-regular;
                src: url(fonts/Roboto-Regular.ttf);
            }
+           .products::-webkit-scrollbar {
+               display: none;
+           } 
+          .cartItemSec::-webkit-scrollbar {
+               display: none;
+           }         
            .nav{
                display: flex;
                background-color: #305f72;
@@ -30,10 +36,10 @@
                flex: 0 0 15%;
            }
            .products{
-               flex: 0 0 70%;
+               flex: 0 0 80%;
                display: grid;
-               grid-template-columns: auto auto auto;
-               padding: 10px;
+               grid-template-columns: auto auto auto auto;
+               padding: 20px;
                grid-gap: 10px 10px;
                background-color: #f1f1f1;
                overflow-y: scroll;
@@ -42,65 +48,124 @@
            .product{
               background-color: white;
               border-radius: 15px;
+              padding: 10px;
+              box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
            }
            .productImage{
-               height: 70%;
-               border: 2px solid black;
+               display: block;
+               width:100%;
+               margin: auto;
+               border: 2px solid #f1f1f1;
+               border-radius: 10px;
+               overflow: hidden;
            }
            .title{
                text-align: center;  
-               height: 10%; 
                padding: 10px;
                font-weight: bolder;
            }
            .desc{
                text-align: center;
-               height: 60%;
                padding: 20px;
            }
+           .optionsCont{
+               display: flex;
+           }
            .price{
-               text-align: center;
-               height: 10%;
+               flex: 0 0 70%;
+               font-weight: bold;
+               margin: auto;
+               color: maroon;
+               padding-left: 10px;
            }
            .buybtn{
+               width:43px;
                display: block;
                margin: auto;
                padding: 10px;
-               background-color: transparent;
-               border: 2px solid grey;
-               border-radius: 10px;
+               cursor: pointer;
+             
            }
            .cart{
-               flex: 0 0 30%;
+               flex: 0 0 20%;
                padding: 10px;
            }
+           .CartHeader{
+               text-align: center;
+               font-size: 23px;
+               padding: 15px 0;
+           }
+           .cartItemSec{
+               height:70vh;
+               overflow-y: scroll;
+           }
+           .cartItem .title{
+               text-align: left;
+               font-size: 15px;
+               padding: 0;
+           }
            .cartItem{
+               display: flex;
                padding: 10px;
-               border-bottom: 2px solid #f1f1f1;       
+               border: 2px solid #f1f1f1;    
+               border-radius: 10px;   
+           }
+           .cartItemImg{
+               margin: 10px 0;
+               width: 30%;
+               border-radius: 10px;
+           }
+           .cartItemDesc{
+               flex: 0 0 70%;
+               padding: 10px;
+           }
+           .cartItem .price{
+               padding: 5px;
+               font-size: 15px;
+               padding-left:0;
+
            }
            .controls{
                display: flex;
                justify-content: space-between;
+               background-color: white;
+               border-radius: 10px;
            }
            .add{
-               flex: 0 0 20%;
-               padding: 10px;
+               width:15%;
+               padding: 1px;
                text-align: center;
                font-size: large;
                font-weight: bolder;
+               cursor: pointer;
            }
            .quantity{
                flex: 0 0 60%;
-               padding: 10px;
+               padding: 2px;
                text-align: center;
+               font-size: 15px;
+               margin: auto;
                background-color: #f1f1f1;
+               border-radius: 7px;
            }
            .remove{
-               flex: 0 0 20%;
-               padding: 10px;
-               text-align: center;
+               width:15%;
+               padding: 1px;
                font-size: large;
                font-weight: bolder;
+               border: none; 
+               cursor: pointer;  
+           }
+           .placeOrder{
+               display: block;
+               font-weight: bold;
+               margin: auto;
+               padding: 10px;
+               border: none;
+               background-color: maroon;
+               border-radius: 10px;
+               color: white;
+               cursor: pointer;
            }
 
        </style>
@@ -137,8 +202,14 @@
             let _cart = JSON.stringify(CART.contents);
             await localStorage.setItem(CART.KEY,_cart);
         },
-        add(ev){
+       async add(ev){
             let id = parseInt(ev.target.getAttribute('data-id'));
+             //add a new item to the cart
+             //check that it is not in the cart already
+            if(CART.findCart(id)){
+               await CART.increase(id, 1);
+                showCart();
+            }else{
             let arr = PRODUCTS.filter((product)=>{
                 if(product.id == id){
                     return true;
@@ -148,12 +219,64 @@
                 id: arr[0].id,
                 title: arr[0].title,
                 qty: 1,
+                img: arr[0].img, 
+                price: arr[0].price,
                 itemPrice: arr[0].itemPrice
             }
             CART.contents.push(newItem);
             CART.sync();
             showCart();
+            }
+        },
+        increase(id,qty=1){
+            //increase the quantity of an item in the cart
+            CART.contents = CART.contents.map(item=>{
+                if(item.id == id){
+                    item.qty = item.qty + qty;
+                }
+                return item;
+            });
+            //update localStorage
+            CART.sync();
+        },
+        decrease(id,qty=1){
+            //increase the quantity of an item in the cart
+            CART.contents = CART.contents.map(item=>{
+                if(item.id == id){
+                    item.qty = item.qty - qty;
+                }
+                return item;
+            });
+            CART.contents.forEach(async item=>{
+                if(item.qty == 0){
+                   await CART.remove(item.id);
+                }
+            });
+            //update localStorage
+            CART.sync();
+        },
+        remove(id){
+            CART.contents = CART.contents.filter(item=>{
+                if(item.id !== id){
+                    return true;
+                }
+            });
+            //update localStorage
+            CART.sync()
+        },
+        findCart(id){
+           
+            let match = CART.contents.filter(item=>{
+                if(item.id == id){
+                    return true;
+                }
+            });
+            if(match[0])
+               return match[0];
+               console.log('sss');
+              
         }
+
     }
 
 
@@ -163,46 +286,91 @@
 function showCart(){
     let cartSection = document.querySelector('.cart');
     cartSection.innerHTML = '';
+    let header = document.createElement('h1');
+    header.className = 'CartHeader';
+    header.textContent = 'CART';
+    cartSection.appendChild(header);
+
+    let cartItemSec = document.createElement('div');
+    cartItemSec.className = 'cartItemSec';
+
     CART.contents.forEach((cartItem)=>{
         let card = document.createElement('div');
         card.className = 'cartItem';
 
+        let cartItemImg = document.createElement('img');
+        cartItemImg.className = 'cartItemImg';
+        cartItemImg.src = 'images/formals/'+ cartItem.img;
+        card.appendChild(cartItemImg);
+
+        let cartItemDesc = document.createElement('div');
+        cartItemDesc.className = 'cartItemDesc';
+
         let title = document.createElement('div');
         title.className = 'title';
         title.textContent = cartItem.title;
-        card.appendChild(title);
+        cartItemDesc.appendChild(title);
 
         let price = document.createElement('div');
         price.className = 'price';
-        price.textContent = cartItem.itemPrice;
-        card.appendChild(price);
+        price.textContent = '$'+ cartItem.price;
+        cartItemDesc.appendChild(price);
 
         let controls = document.createElement('div');
         controls.className = 'controls';
 
-        let remove = document.createElement('div');
+        let remove = document.createElement('img');
         remove.className = 'remove';
-        remove.textContent = '-';
+        remove.src = 'images/minus.svg';
+        remove.setAttribute('data-id', cartItem.id);
+        remove.addEventListener('click',decrement);
         controls.appendChild(remove);
 
         let quantity = document.createElement('div');
         quantity.className = 'quantity';
-        quantity.textContent = cartItem.qty;
+        quantity.textContent = 'Qty : '+ cartItem.qty;
         controls.appendChild(quantity);
 
-        let add = document.createElement('div');
+        let add = document.createElement('img');
         add.className = 'add';
-        add.textContent = '+';
+        add.src = 'images/add.svg';
+        add.setAttribute('data-id', cartItem.id);
+        add.addEventListener('click',increment);
         controls.appendChild(add);
 
-        card.appendChild(controls);
-        cartSection.appendChild(card);
+        cartItemDesc.appendChild(controls);
+        card.appendChild(cartItemDesc);
+        cartItemSec.appendChild(card);
+        cartSection.appendChild(cartItemSec);
     });
+    let placeOrderSec = document.createElement('div');
+    placeOrderSec.className = 'placeOrderSec';
+  
+    let placeOrder = document.createElement('button');
+        placeOrder.className = 'placeOrder';
+        placeOrder.textContent = 'PLACE ORDER';
+        placeOrderSec.appendChild(placeOrder);
+        cartSection.appendChild(placeOrderSec);
+
+}
+
+function increment(ev){
+    let id = ev.target.getAttribute('data-id');
+    CART.increase(id,1);
+    showCart();
+
+}
+
+function decrement(ev){
+    let id = ev.target.getAttribute('data-id');
+    CART.decrease(id,1);
+    showCart();
+
 }
 
 
 
-const URL = "https://prof3ssorst3v3.github.io/media-sample-files/products.json?";
+const URL = "https://macmarico.github.io/media-sample-files/products.json";
     fetch(URL)
     .then(response=>response.json())
     .then(products=>showProducts(products));
@@ -220,23 +388,33 @@ const URL = "https://prof3ssorst3v3.github.io/media-sample-files/products.json?"
           title.textContent = product.title;
           card.appendChild(title);
 
+          let productImage = document.createElement('img');
+          productImage.className = 'productImage';
+          productImage.src = 'images/formals/'+product.img;
+          card.appendChild(productImage);
+
           let desc = document.createElement('div');
           desc.className = 'desc';
           desc.textContent = product.desc;
           card.appendChild(desc);
 
+          let optionsCont = document.createElement('div');
+          optionsCont.className = 'optionsCont';
+          
+
           let price = document.createElement('div');
           price.className = 'price';
-          price.textContent = product.price;
-          card.appendChild(price);
+          price.textContent = '$'+product.price;
+          optionsCont.appendChild(price);
 
-          let buy = document.createElement('button');
+          let buy = document.createElement('img');
           buy.className = 'buybtn';
-          buy.innerHTML = 'buy';
+          buy.src = 'images/cart.svg';
           buy.setAttribute('data-id', product.id);
           buy.addEventListener('click',CART.add);
-          card.appendChild(buy);
+          optionsCont.appendChild(buy);
 
+          card.appendChild(optionsCont);
           productSection.appendChild(card);
         });
     }
@@ -251,6 +429,9 @@ const URL = "https://prof3ssorst3v3.github.io/media-sample-files/products.json?"
 
         <div class="nav">
             <div><b>SHOPME</b></div>
+            <input type="text" placeholder="search" style="font-size: 17px; padding: 10px; border-radius: 10px; border: none; margin-left: auto; width: 20%; margin: 10px;">
+            <img src="images/user.svg" style="width: 30px; margin-left: auto;">
+            
             <div>Logout</div>
         </div>
         <div class="main">
